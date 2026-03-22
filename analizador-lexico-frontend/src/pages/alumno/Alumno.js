@@ -1,106 +1,193 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import "../../styles/alumno.css";
+import { useNavigate } from "react-router-dom";
 
 function Alumno({ volver }) {
 
-  const [codigo, setCodigo] = useState("");
-  const [tokens, setTokens] = useState([]);
+const [codigo,setCodigo] = useState("");
+const [tokens,setTokens] = useState([]);
+const navigate = useNavigate();
+const [palabrasReservadas,setPalabrasReservadas] = useState([]);
+const [delimitadores,setDelimitadores] = useState([]);
 
-  const analizar = () => {
+useEffect(()=>{
 
-    const palabrasReservadas = ["var","if","else","print"];
+fetch("http://localhost:3000/palabras")
+.then(r=>r.json())
+.then(data=>setPalabrasReservadas(
+data.filter(p=>p.estado).map(p=>p.palabra)
+))
 
-    const partes = codigo.split(/\s+/);
+fetch("http://localhost:3000/delimitadores")
+.then(r=>r.json())
+.then(data=>setDelimitadores(
+data.filter(d=>d.estado).map(d=>d.delimitador)
+))
 
-    const resultado = partes.map((p) => {
+},[])
 
-      if(palabrasReservadas.includes(p))
-        return {token:p,tipo:"Palabra Reservada"}
 
-      if(/^[0-9]+$/.test(p))
-        return {token:p,tipo:"Número"}
+const analizar = async () => {
 
-      if(/^[a-zA-Z][a-zA-Z0-9]*$/.test(p))
-        return {token:p,tipo:"Identificador"}
+const partes = codigo.match(/[a-zA-Z_][a-zA-Z0-9_]*|\d+|[^\s]/g) || [];
 
-      return {token:p,tipo:"Símbolo"}
+/* \s+| */
 
-    })
+const resultado = [];
 
-    setTokens(resultado)
+for(let p of partes){
 
-  };
+try{
 
-  return (
+const res = await fetch(`http://localhost:3000/tokens/validar/${encodeURIComponent(p)}`);
+const data = await res.json();
 
-    <div className="alumno-container">
+if(data.error){
 
-      <div className="alumno-panel">
+const err = await fetch(`http://localhost:3000/errores/${data.error}`);
+const errData = await err.json();
 
-        <h1 className="alumno-title">
-          Analizador Léxico
-        </h1>
+let mensajeError = "";
 
-        <textarea
-          className="code-area"
-          placeholder="Escribe aquí el código a analizar..."
-          value={codigo}
-          onChange={(e)=>setCodigo(e.target.value)}
-        />
+if(Array.isArray(errData)){
+mensajeError = errData[0]?.error || "Error";
+}else{
+mensajeError = errData.error || "Error";
+}
 
-        <button
-          className="btn-analizar"
-          onClick={analizar}
-        >
-          Analizar
-        </button>
+resultado.push({
+token:p,
+tipo:mensajeError
+});
 
-        {tokens.length > 0 && (
+}else{
 
-          <>
-            <table className="result-table">
+resultado.push({
+token:p,
+tipo:data.tipo
+});
 
-              <thead>
-                <tr>
-                  <th>Token</th>
-                  <th>Tipo</th>
-                </tr>
-              </thead>
+}
 
-              <tbody>
+}catch(e){
 
-                {tokens.map((t,i)=>(
-                  <tr key={i}>
-                    <td>{t.token}</td>
-                    <td>{t.tipo}</td>
-                  </tr>
-                ))}
+resultado.push({
+token:p,
+tipo:"Error"
+});
 
-              </tbody>
+}
 
-            </table>
+}
 
-            <div className="summary">
+setTokens(resultado)
 
-              Tokens encontrados: {tokens.length}
+}
 
-            </div>
 
-          </>
+return(
 
-        )}
+<div className="alumno-container">
 
-        <button
-          className="btn-volver"
-          onClick={volver}
-        >
-          Volver
-        </button>
+<div className="catalogos">
 
-      </div>
+<div className="catalogo-box">
 
-    </div>
-  );
+<h3>Palabras reservadas</h3>
+
+<p>
+[ {palabrasReservadas.join(", ")} ]
+</p>
+
+</div>
+
+<div className="catalogo-box">
+
+<h3>Delimitadores</h3>
+
+<p>
+[ {delimitadores.join(", ")} ]
+</p>
+
+</div>
+
+</div>
+
+
+<div className="alumno-panel">
+
+<h1 className="alumno-title">
+Analizador Léxico
+</h1>
+
+<textarea
+className="code-area"
+placeholder="Escribe aquí el código a analizar..."
+value={codigo}
+onChange={(e)=>setCodigo(e.target.value)}
+/>
+
+<button
+className="btn-analizar"
+onClick={analizar}
+>
+Analizar
+</button>
+
+
+{tokens.length>0 &&(
+
+<>
+
+<div className="tabla-scroll">
+
+<table className="result-table">
+
+<thead>
+<tr>
+<th>No.</th>
+<th>Token</th>
+<th>Tipo</th>
+</tr>
+</thead>
+
+<tbody>
+
+{tokens.map((t,i)=>(
+<tr key={i}>
+<td>{i+1}</td>
+<td>{t.token}</td>
+<td>{t.tipo}</td>
+</tr>
+))}
+
+</tbody>
+
+</table>
+
+</div>
+
+<div className="summary">
+Tokens encontrados: {tokens.length}
+</div>
+
+</>
+
+)}
+
+<button
+className="btn-volver"
+onClick={() => navigate("/")}
+>
+Volver
+</button>
+
+</div>
+
+</div>
+
+)
+
 }
 
 export default Alumno;

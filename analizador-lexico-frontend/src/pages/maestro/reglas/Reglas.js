@@ -1,6 +1,27 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
+import UpdateReglas from "./UpdateReglas";
+import InsertReglas from "./InsertReglas";
 
 function Reglas() {
+
+  const [reglas, setReglas] = useState([]);
+  const [reglaSeleccionada, setReglaSeleccionada] = useState(null);
+  const [mostrarCrear, setMostrarCrear] = useState(false);
+
+  const cargarReglas = () => {
+
+    fetch("http://localhost:3000/reglas")
+      .then(res => res.json())
+      .then(data => setReglas(data))
+      .catch(error => console.error(error));
+
+  };
+
+  useEffect(() => {
+
+    cargarReglas();
+
+  }, []);
 
   return (
 
@@ -9,13 +30,15 @@ function Reglas() {
       <div className="table-header">
 
         <h2 className="table-title">
-          Catálogo de Reglas
+          Reglas básicas para el uso del Software
         </h2>
 
-        <input
-          className="search-box"
-          placeholder="Buscar..."
-        />
+        <button
+          className="btn-create"
+          onClick={() => setMostrarCrear(true)}
+        >
+          Crear
+        </button>
 
       </div>
 
@@ -31,9 +54,46 @@ function Reglas() {
 
         <tbody>
 
+          {reglas.map((r) => (
+
+            <tr key={r.id}>
+
+              <td>{r.regla}</td>
+
+              <td>
+                {r.estado ? "Activo" : "Inactivo"}
+              </td>
+
+              <td>
+
+                <button
+                  className="btn-update"
+                  onClick={() => setReglaSeleccionada(r)}
+                >
+                  Actualizar
+                </button>
+
+              </td>
+
+            </tr>
+
+          ))}
+
         </tbody>
 
       </table>
+
+      <UpdateReglas
+        regla={reglaSeleccionada}
+        cerrar={() => setReglaSeleccionada(null)}
+        actualizarLista={cargarReglas}
+      />
+
+      <InsertReglas
+        mostrar={mostrarCrear}
+        cerrar={() => setMostrarCrear(false)}
+        actualizarLista={cargarReglas}
+      />
 
     </div>
 

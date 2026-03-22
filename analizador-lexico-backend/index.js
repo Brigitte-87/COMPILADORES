@@ -1,11 +1,23 @@
 const express = require("express");
 const cors = require("cors");
 const { connectDB, sql } = require("./config/db");
+const palabrasRoutes = require("./routes/palabrasRoutes");
+const delimitadoresRoutes = require("./routes/delimitadoresRoutes");
+const erroresRoutes = require("./routes/erroresRoutes");
+const reglasRoutes = require("./routes/reglasRoutes");
+const tokensRoutes = require("./routes/tokensRoutes");
+const idErroresRoutes = require("./routes/idErroresRoutes");
 
 const app = express();
 
 app.use(cors());
 app.use(express.json());
+app.use("/palabras", palabrasRoutes);
+app.use("/delimitadores", delimitadoresRoutes);
+app.use("/errores", erroresRoutes);
+app.use("/reglas", reglasRoutes);
+app.use("/tokens", tokensRoutes);
+app.use("/errores", idErroresRoutes);
 
 connectDB();
 
